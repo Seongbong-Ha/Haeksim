@@ -126,18 +126,21 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background-color: #e6f7f0; /* Light green background for the circle */
-  border: 5px solid #007bff; /* Blue border for progress visual */
+  
+  /* 배경을 코닉 그라데이션으로 설정합니다. */
+  background: conic-gradient(#007bff 288deg, #e6f7f0 0deg); 
+  
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 20px;
+  border: none; /* 기존 border는 제거합니다 */
 }
 
 .progress-text {
   font-size: 24px;
   font-weight: bold;
-  color: #007bff;
+  color: #000000;
 }
 
 .cheer-up {
@@ -198,4 +201,28 @@
 
 .btn-extend:hover {
   background-color: #558ebc;
+}
+
+.btn-ask-ai {
+  background-color: #e6f7ff; /* 배경색 변경 */
+  color: #007bff; /* 글자 및 아이콘 색상 변경 */
+  padding: 15px 30px;
+  border: 1px solid #007bff; /* 테두리 추가 */
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-ask-ai:hover {
+  background-color: #cceeff;
+}
+
+.btn-ask-ai svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor; /* svg 색상을 텍스트 색상과 동일하게 설정 */
 }

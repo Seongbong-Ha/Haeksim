@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './DashboardPage.css'; // Make sure to create this CSS file
+ // Make sure to create this CSS file
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ const DashboardPage = () => {
           <a href="#" className="active">대시보드</a>
           <a href="#">설정</a>
           <a href="#">리포트</a>
-          <a href="#">로그아웃</a>
+          <a href="/page1" style={{ cursor: 'pointer' }}>로그아웃</a>
           <img src="path/to/profile-image.jpg" alt="Profile" className="profile-img" />
         </nav>
       </header>

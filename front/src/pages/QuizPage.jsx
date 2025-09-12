@@ -1,15 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './QuizPage.css'; // Import the CSS file
+import ChatPage from "./ChatPage";
+
 
 const QuizPage = () => {
   const navigate = useNavigate();
-  
+
   // State for the selected multiple-choice answer
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  
+
+  const [showChat, setShowChat] = useState(false);
+
   // State for the text inputs
   const [answers, setAnswers] = useState(['', '', '', '', '']);
+
+  // State for checking if all answers are filled out
+  const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
+  
+  // State to track completed questions for progress bar
+  const [completedQuestions, setCompletedQuestions] = useState(0);
+
+  // Check if all answers are filled whenever `answers` state changes
+  useEffect(() => {
+    // 모든 서술형 답안과 객관식 답안이 모두 채워졌는지 확인
+    const allShortAnswersFilled = answers.every(answer => answer.trim() !== '');
+    const isMultipleChoiceSelected = selectedAnswer !== null;
+
+    if (allShortAnswersFilled && isMultipleChoiceSelected) {
+      setIsSubmitEnabled(true);
+    } else {
+      setIsSubmitEnabled(false);
+    }
+    
+    // Calculate completed questions for progress bar
+    const shortAnswersCompleted = answers.filter(answer => answer.trim() !== '').length;
+    const multipleChoiceCompleted = selectedAnswer !== null ? 1 : 0;
+    setCompletedQuestions(shortAnswersCompleted + multipleChoiceCompleted);
+  }, [answers, selectedAnswer]); // answers와 selectedAnswer가 바뀔 때마다 실행
 
   const handleInputChange = (index, event) => {
     const newAnswers = [...answers];
@@ -17,13 +44,20 @@ const QuizPage = () => {
     setAnswers(newAnswers);
   };
 
+  const handleMultipleChoiceClick = (option) => {
+    setSelectedAnswer(option);
+  };
+
   const handleSubmit = () => {
+    if (!isSubmitEnabled) {
+      alert("모든 문제를 풀어야 제출할 수 있습니다.");
+      return;
+    }
+    
     console.log("문제 제출 버튼 클릭!");
     console.log("선택된 정답:", selectedAnswer);
     console.log("서술형 답안:", answers);
     // You would typically send this data to a server
-    // navigate('/results-page');
-    // quiz 결과 페이지로 이동
     navigate('/quiz-results');
   };
 
@@ -31,14 +65,19 @@ const QuizPage = () => {
     navigate(-1); // Go back to the previous page
   };
 
+  const handleAskAI = () => {
+    console.log("AI 선생님에게 질문하기 버튼 클릭!");
+    setShowChat((prev) => !prev);
+  };
+
   const handleStartNew = () => {
     // Reset all state for a new problem
     setSelectedAnswer(null);
     setAnswers(['', '', '', '', '']);
     console.log("새 문제 생성 버튼 클릭!");
-    // You might also navigate to a settings page here
-    // navigate('/passage-settings');
   };
+
+  const totalQuestions = 6; // 5 short answers + 1 multiple choice
 
   return (
     <div className="quiz-container">
@@ -46,10 +85,10 @@ const QuizPage = () => {
       <header className="quiz-header">
         <div className="logo">Haeksim</div>
         <nav className="header-nav">
-          <a href="#">대시보드</a>
+          <a href="/dashboard">대시보드</a>
           <a href="#" className="active">설정</a>
           <a href="#">리포트</a>
-          <a href="#">로그아웃</a>
+          <a href="/page1">로그아웃</a>
           <img src="path/to/profile-image.jpg" alt="Profile" className="profile-img" />
         </nav>
       </header>
@@ -58,6 +97,7 @@ const QuizPage = () => {
       <main className="quiz-main">
         <h1 className="main-title">The Impact of AI on Education</h1>
         
+
         {/* Passage Section */}
         <section className="passage-section">
           <p>
@@ -96,65 +136,73 @@ const QuizPage = () => {
         <section className="multiple-choice-section">
           <div className="mc-prompt">이 지문의 주제에 대해 올바른 답을 고르시오.</div>
           <div className="option-group">
-            <div 
-              className={`mc-option ${selectedAnswer === 1 ? 'selected' : ''}`}
-              onClick={() => setSelectedAnswer(1)}
-            >
-              <div className="mc-radio-button"></div>
-              <label>① AI를 교육에 적용하면 어떤 위험이 발생할 수 있는지에 대해 중점적으로 다루는 글이다.</label>
-            </div>
-            <div 
-              className={`mc-option ${selectedAnswer === 2 ? 'selected' : ''}`}
-              onClick={() => setSelectedAnswer(2)}
-            >
-              <div className="mc-radio-button"></div>
-              <label>② AI는 교육을 완전히 변화시켜서 교사의 역할은 중요하지 않다고 주장하는 글이다.</label>
-            </div>
-            <div 
-              className={`mc-option ${selectedAnswer === 3 ? 'selected' : ''}`}
-              onClick={() => setSelectedAnswer(3)}
-            >
-              <div className="mc-radio-button"></div>
-              <label>③ AI가 교육에 가져올 긍정적인 효과와 부정적인 측면을 모두 균형 있게 다루는 글이다.</label>
-            </div>
-            <div 
-              className={`mc-option ${selectedAnswer === 4 ? 'selected' : ''}`}
-              onClick={() => setSelectedAnswer(4)}
-            >
-              <div className="mc-radio-button"></div>
-              <label>④ AI를 교육에 도입할 때 필요한 기술적 준비에 대해 자세히 설명하는 글이다.</label>
-            </div>
-            <div 
-              className={`mc-option ${selectedAnswer === 5 ? 'selected' : ''}`}
-              onClick={() => setSelectedAnswer(5)}
-            >
-              <div className="mc-radio-button"></div>
-              <label>⑤ AI가 교육에 가져올 긍정적인 효과만을 강조하며 도입을 촉구하는 글이다.</label>
-            </div>
+            {[1, 2, 3, 4, 5].map((num) => (
+              <div 
+                key={num}
+                className={`mc-option ${selectedAnswer === num ? 'selected' : ''}`}
+                onClick={() => handleMultipleChoiceClick(num)}
+              >
+                <label>
+                  {num === 1 && '① AI를 교육에 적용하면 어떤 위험이 발생할 수 있는지에 대해 중점적으로 다루는 글이다.'}
+                  {num === 2 && '② AI는 교육을 완전히 변화시켜서 교사의 역할은 중요하지 않다고 주장하는 글이다.'}
+                  {num === 3 && '③ AI가 교육에 가져올 긍정적인 효과와 부정적인 측면을 모두 균형 있게 다루는 글이다.'}
+                  {num === 4 && '④ AI를 교육에 도입할 때 필요한 기술적 준비에 대해 자세히 설명하는 글이다.'}
+                  {num === 5 && '⑤ AI가 교육에 가져올 긍정적인 효과만을 강조하며 도입을 촉구하는 글이다.'}
+                </label>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* Short Answer Section */}
         <section className="short-answer-section">
+          <div className="short-answer-title">핵심어 및 서술형 문제</div>
+          <div className="short-answer-description">
+            각 빈칸에 들어갈 핵심 단어와 내용을 서술하세요. (5문제)
+          </div>
           {[1, 2, 3, 4, 5].map((num, index) => (
-            <div key={num} className="sa-input-group">
-              <label>{num} 서술 작성</label>
-              <textarea
-                value={answers[index]}
-                onChange={(e) => handleInputChange(index, e)}
-                rows="5"
-              ></textarea>
+            <div key={num} className="sa-input-group-container">
+              <div className="sa-input-group">
+                <label>{num} 서술 작성</label>
+                <textarea
+                  value={answers[index]}
+                  onChange={(e) => handleInputChange(index, e)}
+                  rows="5"
+                ></textarea>
+              </div>
+              <div className="char-count">작성 글자 수: {answers[index].length}자</div>
             </div>
-          ))}
+          ))} 
         </section>
 
-        <div className="char-count">총 작성 글자 수: {answers.join('').length}자</div>
+        <div className="char-count total-char-count">총 작성 글자 수: {answers.join('').length}자</div>
+
+        <div className="ai-teacher-section">
+          <button className="btn btn-ask-ai" onClick={handleAskAI}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            AI 선생님에게 질문하기
+          </button>
+        </div>
+        {showChat && (
+        <div className="chat-popup">
+          <ChatPage isPopup={true} />
+        </div>
+        )}
+
+        {/* Progress Bar Section */}
+        <section className="progress-section">
+          <div className="progress-text">{completedQuestions} / {totalQuestions} 완료</div>
+          <progress className="progress-bar" value={completedQuestions} max={totalQuestions}></progress>
+        </section>
 
         {/* Action Buttons */}
         <div className="action-buttons-container">
           <button className="btn btn-back" onClick={handleGoBack}>뒤로가기</button>
-          <button className="btn btn-submit" onClick={handleSubmit}>제출하기</button>
-          <button className="btn btn-new-problem" onClick={handleStartNew}>새 문제 생성</button>
+          <button className="btn btn-submit" onClick={handleSubmit} disabled={!isSubmitEnabled}>
+            제출하기
+          </button>
         </div>
       </main>
     </div>
