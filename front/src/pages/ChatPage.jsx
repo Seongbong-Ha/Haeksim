@@ -1,80 +1,180 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import "./ChatPage.css";
 
+const API_URL = "http://localhost:8000";
+function getAuthHeaders() {
+  const token = localStorage.getItem("access_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
-const ChatPage = ({ isPopup = false }) => {
-  const navigate = useNavigate();
+/**
+ * ChatPage (quiz + summary 겸용)
+ */
+export default function ChatPage({ open = true, onClose, context = {} }) {
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState([
-    { text: '안녕하세요, 무엇을 도와드릴까요?', sender: 'AI Tutor', avatar: 'path/to/ai-avatar-1.jpg' },
-    { text: '핵심어 정확도가 왜 90% 인가요?', sender: 'Student', avatar: 'path/to/student-avatar.jpg' },
-    { text: '사용하신 핵심어들이 지문의 주요 내용을 잘 반영하고 있습니다.', sender: 'AI Tutor', avatar: 'path/to/ai-avatar-2.jpg' },
+    { role: "assistant", content: "안녕하세요! 이 내용에 대해 무엇이든 물어보세요 😊" },
   ]);
-  const [input, setInput] = useState('');
+  const [selfOpen, setSelfOpen] = useState(true); // ⬅️ 내부 닫기용
+  const scrollRef = useRef(null);
 
-  const handleSendMessage = () => {
-    if (input.trim() === '') return;
+  // 모드 판별
+  const mode =
+    context.mode ??
+    ((context.passage || context.summary || context.mySummary) ? "summary" : "quiz");
 
-    // Simulate sending a message
-    const newMessage = { text: input, sender: 'Student', avatar: 'path/to/student-avatar.jpg' };
-    setMessages([...messages, newMessage]);
-    setInput('');
+  // summary 컨텍스트
+  const passage =
+    (context.passage ?? context.item?.generated_passage ?? "").replace(/<br\s*\/?>/gi, "\n");
+  const mySummary = context.summary ?? context.mySummary ?? "";
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = { text: '잠시만요...', sender: 'AI Tutor', avatar: 'path/to/ai-avatar-1.jpg' };
-      setMessages(prevMessages => [...prevMessages, aiResponse]);
-    }, 1000);
+  // quiz 컨텍스트
+  const item = context.item;
+  const correctIndex = context.correctIndex ?? 0;
+  const selectedAnswer = context.selectedAnswer ?? 0;
+  const evidenceMap = context.evidenceMap ?? {};
+
+  const quizPayloadBase = useMemo(() => {
+    if (!item) return null;
+    return {
+      item_id: String(item.id),
+      question: item.question || "다음 글을 읽고 물음에 답하시오.",
+      passage,
+      choices: (item.choices || []).map((c) => ({ index: c.index, text: c.text })),
+      correct_index: correctIndex,
+      user_selected_index: selectedAnswer,
+      evidence_map: evidenceMap,
+    };
+  }, [item, passage, correctIndex, selectedAnswer, evidenceMap]);
+
+  // 스크롤 맨 아래로
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, open, selfOpen]);
+
+  // 초기 인사말
+  useEffect(() => {
+    setMessages([
+      {
+        role: "assistant",
+        content:
+          mode === "summary"
+            ? "안녕하세요! 이 지문과 당신의 요약에 대해 무엇이든 물어보세요 😊"
+            : "안녕하세요! 이 문제에 대해 무엇이든 물어보세요 😊",
+      },
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  // ESC 로 닫기
+  useEffect(() => {
+    if (!open || !selfOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") handleClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, selfOpen]);
+
+  const handleClose = () => {
+    if (onClose) onClose();
+    else setSelfOpen(false); // 부모가 onClose 안 넘겨도 닫히도록
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
+  const send = async () => {
+    const text = input.trim();
+    if (!text) return;
+    if (mode === "quiz" && !quizPayloadBase) return;
+
+    setInput("");
+    setBusy(true);
+
+    const newMessages = [...messages, { role: "user", content: text }];
+    setMessages(newMessages);
+
+    try {
+      let url = "";
+      let body = null;
+
+      const history = newMessages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      if (mode === "summary") {
+        url = `${API_URL}/api/v1/summary/chat`;
+        body = { passage, summary: mySummary, messages: history };
+      } else {
+        url = `${API_URL}/api/v1/chat`;
+        body = { ...quizPayloadBase, history, message: text };
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      const data = await res.json();
+      const reply = data.reply || data.answer || "(빈 응답)";
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `오류가 발생했어요: ${String(e)}` },
+      ]);
+    } finally {
+      setBusy(false);
     }
   };
 
+  const onKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+
+  // 렌더링 조건
+  if (!open || !selfOpen) return null;
+
   return (
-    <div className="chat-container">
-      {!isPopup && (
-        <header className="chat-header">
-          <h1 className="main-title">인공지능 선생님</h1>
-          <nav className="header-nav">
-            <a href="#">대시보드</a>
-            <a href="#">설정</a>
-            <a href="#">리포트</a>
-            <a href="#">로그아웃</a>
-            <img src="path/to/student-avatar.jpg" alt="Profile" className="profile-img" />
-          </nav>
-        </header>
-      )}
+    <div className="chat-popup">
+      <div className="chat-topbar">
+        <span>AI 학습코치</span>
+        <button
+          className="chat-close-btn"
+          onClick={handleClose}
+          title="닫기"
+          aria-label="채팅 닫기"
+        >
+          ✕
+        </button>
+      </div>
 
-      <main className="chat-main">
-        <div className="chat-messages">
-          {messages.map((msg, index) => (
-            <div 
-              key={index} 
-              className={`message-bubble-container ${msg.sender === 'Student' ? 'student-message' : 'ai-message'}`}
-            >
-              <img src={msg.avatar} alt={`${msg.sender} avatar`} className="avatar" />
-              <div className="message-bubble">
-                <div className="message-text">{msg.text}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
+      <div className="chat-body" ref={scrollRef}>
+        {messages.map((m, i) => (
+          <div key={i} className={`msg-row ${m.role === "user" ? "me" : "ai"}`}>
+            <div className="bubble">{m.content}</div>
+          </div>
+        ))}
+      </div>
 
-      <div className="chat-input-area">
-        <input 
-          type="text" 
-          placeholder="Type your response here..." 
+      <div className="chat-input">
+        <input
+          placeholder="질문을 입력하고 Enter"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={onKeyDown}
+          disabled={busy}
         />
-        <button onClick={handleSendMessage}>전송</button>
+        <button onClick={send} disabled={busy}>
+          전송
+        </button>
       </div>
     </div>
   );
-};
-
-export default ChatPage;
+}

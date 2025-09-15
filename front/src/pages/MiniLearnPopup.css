@@ -1,0 +1,100 @@
+.mini-learn-popup {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  background: #fff;
+  border: 1px solid #d8e0ea;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.18);
+  z-index: 9999;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-learn-header {
+  background: #eef7ff;
+  padding: 10px 12px;
+  font-weight: 800;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mini-learn-close {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.mini-learn-body {
+  padding: 12px;
+}
+
+.mini-learn-body p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.mini-learn-textarea {
+  width: 100%;
+  height: 80px;  /* 2~3문장 정도 */
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+  outline: none;
+  font-size: 14px;
+}
+
+.mini-learn-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 10px 12px 12px;
+}
+
+.mini-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mini-btn.cancel { background:#eef2f6; color:#222; }
+.mini-btn.primary{ background:#1f6fff; color:#fff; }
+
+.mini-learn-error {
+  margin-top: 6px;
+  color: crimson;
+  font-size: 13px;
+}
+
+.mini-learn-loading {
+  font-size: 13px;
+  color: #666;
+  margin-top: 6px;
+}
+
+.chat-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: #1f6fff;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(31, 111, 255, 0.35);
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.chat-fab:active { transform: translateY(1px); }

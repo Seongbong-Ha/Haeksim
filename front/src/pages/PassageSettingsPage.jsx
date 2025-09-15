@@ -1,153 +1,198 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import LoadingPage from './LoadingPage'; // 로딩 페이지 컴포넌트 임포트
+// src/pages/PassageSettingsPage.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./PassageSettingsPage.css"; // ★ CSS 연결 (필수)
 
-// 환경 변수에서 API 주소 불러오기
-const API_URL = "https://unstylized-ineloquently-chiquita.ngrok-free.app";
+// ★ 지금은 하드코딩 방식으로 진행
+const API_URL = "http://localhost:8000";
 
-const PassageSettingsPage = () => {
+// 로그인 후 저장/제출에 토큰이 필요하므로 localStorage에서 읽어옵니다.
+function getAuthHeaders() {
+  const token = localStorage.getItem("access_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export default function PassageSettingsPage() {
   const navigate = useNavigate();
 
-  const [difficulty, setDifficulty] = useState('어려움');
-  const [topic, setTopic] = useState('과학기술');
-  const [features, setFeatures] = useState('지문의 핵심 파악하기');
-  const [passageLength, setPassageLength] = useState(1000);
+  // 상태
+  const [difficulty, setDifficulty] = useState("어려움");
+  const [topic, setTopic] = useState("사회");
+  const [features, setFeatures] = useState("실제 문제 풀이"); // "실제 문제 풀이" | "지문의 핵심 파악하기"
+  const [passageLength, setPassageLength] = useState(1100);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const difficultyOptions = ['기초', '보통', '어려움'];
-  const topicOptions = ['과학기술', '인문', '사회', '예술/문화', '시사'];
-  const featureOptions = ['실제 문제 풀이', '지문의 핵심 파악하기'];
-  
-  const minLength = 800;
-  const maxLength = 1200;
+  // 버튼 그룹 옵션
+  const difficultyOptions = ["기초", "보통", "어려움"];
+  const topicOptions = ["과학기술", "인문", "사회", "예술/문학", "시사"];
+  const featureOptions = ["실제 문제 풀이", "지문의 핵심 파악하기"];
 
-  // **API로 설정값을 보내고 응답에 따라 페이지를 이동하는 함수**
+  // 프런트 UI '기능' → 백엔드 generate mode
+  const toMode = (f) => (f === "실제 문제 풀이" ? "B" : "A");
+
   const handleCreatePassage = async () => {
     setIsLoading(true);
     setError(null);
 
-    const requestData = {
-      difficulty,
-      topic,
-      features,
-      passageLength,
-    };
-
     try {
-      // API 엔드포인트는 백엔드에 따라 변경될 수 있습니다.
-      const response = await axios.post(`${API_URL}/passages/generate`, requestData);
+      // 1) 생성
+      const mode = toMode(features);
+      const target_chars = Math.max(
+        200,
+        Math.min(2000, Number(passageLength) || 1000)
+      );
 
-      console.log('지문 생성 요청 성공:', response.data);
-
-      const responseData = response.data;
-
-      if (features === '실제 문제 풀이') {
-        // 실제 문제 풀이 데이터 형식: { passage: "...", choices: ["...", "...", ...] }
-        // navigate의 state를 통해 다음 페이지로 데이터 전달
-        navigate('/quiz-page', { state: { quizData: responseData } });
-      } else if (features === '지문의 핵심 파악하기') {
-        // 지문의 핵심 파악하기 데이터 형식: { passage: "..." }
-        navigate('/summary-practice', { state: { passageData: responseData } });
+      const genRes = await fetch(`${API_URL}/api/v1/items/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode, difficulty, topic, target_chars }),
+      });
+      if (!genRes.ok) {
+        const t = await genRes.text();
+        throw new Error(`생성 실패: ${genRes.status} ${t}`);
       }
-      
-    } catch (err) {
-      console.error('지문 생성 요청 실패:', err.response ? err.response.data : err);
-      setError('지문 생성에 실패했습니다. 서버 상태를 확인해주세요.');
+      const generated = await genRes.json(); // 선택지/근거 포함(모드 B일 때)
+
+      // 2) 저장(로그인 필요)
+      const saveRes = await fetch(`${API_URL}/api/v1/items`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          payload: generated,
+          tags: ["web"],
+          author: "frontend",
+        }),
+      });
+      if (!saveRes.ok) {
+        const t = await saveRes.text();
+        throw new Error(`저장 실패: ${saveRes.status} ${t}`);
+      }
+      const { item_id } = await saveRes.json();
+
+      // 3) 화면 전환
+      if (features === "실제 문제 풀이") {
+        navigate("/quiz-page", { state: { itemId: item_id } });
+      } else {
+        navigate("/summary-practice", { state: { itemId: item_id } });
+      }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "요청 처리 중 오류가 발생했습니다.");
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
-  const renderOptionButtons = (options, selected, setter) => {
-    return options.map(option => (
-      <button
-        key={option}
-        className={`option-button ${selected === option ? 'selected' : ''}`}
-        onClick={() => setter(option)}
-      >
-        {option}
-      </button>
-    ));
-  };
-  
-  if (isLoading) {
-    return <LoadingPage />;
-  }
-
   return (
     <div className="passage-settings-container">
+      {/* 공용 상단 헤더 */}
       <header className="settings-header">
-        <div className="logo">Haeksim</div>
+        <div className="logo">Su-Neung Gen</div>
         <nav className="header-nav">
-          <a href="/dashboard">대시보드</a>
-          <a href="#" className="active">설정</a>
-          <a href="#">리포트</a>
-          <a href="/page1">로그아웃</a>
-          <img src="path/to/profile-image.jpg" alt="Profile" className="profile-img" />
+          <a href="/" onClick={(e)=>{e.preventDefault(); navigate("/");}}>홈</a>
+          <a className="active" href="/" onClick={(e)=>e.preventDefault()}>설정</a>
+          <img
+            className="profile-img"
+            src="https://placehold.co/80x80"
+            alt="profile"
+          />
         </nav>
       </header>
 
       <main className="settings-main">
-        <h1 className="main-title">지문 설정</h1>
+        <h1 className="main-title">지문 생성 설정</h1>
 
+        {/* 난이도 */}
         <section className="setting-section">
-          <h2>지문 난이도 설정</h2>
+          <h2>난이도</h2>
           <div className="option-group">
-            {renderOptionButtons(difficultyOptions, difficulty, setDifficulty)}
-          </div>
-        </section>
-        
-        <section className="setting-section">
-          <h2>주제 선택</h2>
-          <div className="option-group">
-            {renderOptionButtons(topicOptions, topic, setTopic)}
-          </div>
-        </section>
-
-        <section className="setting-section">
-          <h2>기능 선택</h2>
-          <div className="option-group">
-            {renderOptionButtons(featureOptions, features, setFeatures)}
+            {difficultyOptions.map((d) => (
+              <button
+                key={d}
+                className={`option-button ${difficulty === d ? "selected" : ""}`}
+                onClick={() => setDifficulty(d)}
+              >
+                {d}
+              </button>
+            ))}
           </div>
         </section>
 
+        {/* 주제 */}
         <section className="setting-section">
-          <h2>지문 길이 설정</h2>
+          <h2>주제</h2>
+          <div className="option-group">
+            {topicOptions.map((t) => (
+              <button
+                key={t}
+                className={`option-button ${topic === t ? "selected" : ""}`}
+                onClick={() => setTopic(t)}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 기능 */}
+        <section className="setting-section">
+          <h2>기능</h2>
+          <div className="option-group">
+            {featureOptions.map((f) => (
+              <button
+                key={f}
+                className={`option-button ${features === f ? "selected" : ""}`}
+                onClick={() => setFeatures(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* 길이 슬라이더 */}
+        <section className="setting-section">
+          <h2>지문 길이 (문자)</h2>
           <div className="length-slider-container">
-            <span>{minLength}자</span>
             <input
-              type="range"
-              min={minLength}
-              max={maxLength}
-              value={passageLength}
-              onChange={(e) => setPassageLength(Number(e.target.value))}
               className="length-slider"
+              type="range"
+              min={200}
+              max={2000}
+              step={50}
+              value={passageLength}
+              onChange={(e) => setPassageLength(e.target.value)}
             />
-            <span>{maxLength}자</span>
-          </div>
-          <div className="current-length">
-            현재 설정: {passageLength}자
+            <div className="current-length">{passageLength}자</div>
           </div>
         </section>
 
+        {/* 액션 버튼 */}
         <div className="action-buttons">
-          <button className="btn btn-back" onClick={handleGoBack}>
-            뒤로 가기
+          <button className="btn btn-back" onClick={() => navigate(-1)}>
+            뒤로가기
           </button>
-          <button className="btn btn-create" onClick={handleCreatePassage} disabled={isLoading}>
-            {isLoading ? '생성 중...' : '생성 시작'}
+          <button
+            className="btn btn-create"
+            onClick={handleCreatePassage}
+            disabled={isLoading}
+          >
+            {isLoading ? "생성 중..." : "지문 생성"}
           </button>
         </div>
-        {error && <p className="error-message">{error}</p>}
+
+        {/* 에러 */}
+        {error && (
+          <p style={{ marginTop: 12, color: "crimson", whiteSpace: "pre-wrap" }}>
+            {error}
+          </p>
+        )}
       </main>
     </div>
   );
-};
-
-export default PassageSettingsPage;
+}
