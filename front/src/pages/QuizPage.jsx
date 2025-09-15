@@ -10,6 +10,49 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/* ---------- 지문 단락화 유틸 ---------- */
+// BR/개행 정리 → 문장 분리
+function splitSentencesFromText(raw = "") {
+  const t = String(raw)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/\r\n?/g, "\n")
+    .trim();
+
+  // 두 줄 개행은 이미 단락 → 우선 분리
+  const roughParas = t.split(/\n{2,}/).map(x => x.trim()).filter(Boolean);
+
+  const out = [];
+  const SENT_RX = /[^.!?。\n]+[.!?。]?(?=\s|$)/g; // 한국어도 마침표는 주로 . 또는 。 사용
+  for (const rp of roughParas) {
+    const pieces = rp.match(SENT_RX) || [rp];
+    for (const s of pieces) {
+      const s2 = s.replace(/\s+/g, " ").trim();
+      if (s2) out.push(s2);
+    }
+  }
+  return out;
+}
+
+// API가 내려주는 sentences가 있으면 우선 사용
+function extractSentencesFromItem(item) {
+  if (Array.isArray(item?.sentences) && item.sentences.length) {
+    return item.sentences
+      .map(s => (s.text ?? s.content ?? "").trim())
+      .filter(Boolean);
+  }
+  return splitSentencesFromText(item?.generated_passage || "");
+}
+
+// N문장씩 단락화
+function chunkSentences(sentences, maxPerPara = 3) {
+  const paras = [];
+  for (let i = 0; i < sentences.length; i += maxPerPara) {
+    paras.push(sentences.slice(i, i + maxPerPara).join(" "));
+  }
+  return paras.length ? paras : [""];
+}
+/* -------------------------------------- */
+
 export default function QuizPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,17 +154,25 @@ export default function QuizPage() {
     }
 
     try {
-      // 서버 채점(선택): 이미 사용 중이면 유지
-      await fetch(`${API_URL}/api/v1/items/${encodeURIComponent(String(currentItem.id))}/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ choice_index: selectedAnswer }),
-      }).catch(() => null);
+      // 서버 저장(제출)
+      const res = await fetch(
+        `${API_URL}/api/v1/items/${encodeURIComponent(String(currentItem.id))}/submit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+          body: JSON.stringify({ choice_index: selectedAnswer }),
+        }
+      );
+      if (!res.ok) {
+        const msg = await res.text();
+        alert("제출 실패: " + msg);
+        return;
+      }
 
-      // 결과 페이지로 이동 (문자열 id 그대로 전달)
+      // 결과 페이지로 이동
       navigate("/quiz-results", {
         state: {
-          itemId: String(currentItem.id),   // ★ 슬러그/문자열 id
+          itemId: String(currentItem.id),
           selectedAnswer,
           evidenceMap,
         },
@@ -134,6 +185,10 @@ export default function QuizPage() {
 
   if (loading) return <p>불러오는 중...</p>;
   if (!currentItem) return <p>문항이 없습니다.</p>;
+
+  // 지문 단락화(문장 배열 → 3문장씩 p)
+  const sentences = extractSentencesFromItem(currentItem);
+  const paragraphs = chunkSentences(sentences, 3);
 
   return (
     <div className="quiz-container">
@@ -155,71 +210,72 @@ export default function QuizPage() {
         </section>
 
         <div className="quiz-grid">
-          {/* 왼쪽: 지문 (sticky는 CSS에서 처리) */}
+          {/* 왼쪽: 지문 */}
           <section className="passage-section">
-            <div
-              style={{ whiteSpace: "pre-wrap" }}
-              dangerouslySetInnerHTML={{ __html: currentItem.generated_passage?.replace(/\n/g, "<br/>") }}
-            />
+            <article className="passage-block">
+              {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+            </article>
           </section>
 
-          {/* 오른쪽: 선지 (번호 버튼 = 선택 / 텍스트 = 토글) */}
+          {/* 오른쪽: 선지 (흰 박스 안에 전부 들어오도록 카드 래퍼 추가) */}
           <section className="choices-section">
-            <h2 className="choices-title">{currentItem.question}</h2>
-            <ol className="choices-list">
-              {currentItem.choices.map((c) => {
-                const idx = c.index + 1;
-                const isSelected = selectedAnswer === c.index;
-                const isOpen = expanded.has(c.index);
-                const evidence = evidenceMap[c.index] || "";
-                return (
-                  <li key={c.index} className={`choice-item ${isOpen ? "open" : ""}`}>
-                    <div className={`choice-row ${isSelected ? "selected" : ""}`}>
-                      <button
-                        type="button"
-                        className={`num-select ${isSelected ? "on" : ""}`}
-                        onClick={() => handleNumberSelect(c.index)}
-                        aria-pressed={isSelected}
-                        title={`${idx}번 선택`}
-                      >
-                        {idx}
-                      </button>
-                      <button
-                        type="button"
-                        className="choice-text-btn"
-                        onClick={() => toggleEvidence(c.index)}
-                        aria-expanded={isOpen}
-                        aria-controls={`evi-wrap-${c.index}`}
-                        title="근거 입력란 펼치기/접기"
-                      >
-                        {c.text}
-                      </button>
-                    </div>
+            <div className="choices-card">
+              <h2 className="choices-title">{currentItem.question}</h2>
+              <ol className="choices-list">
+                {currentItem.choices.map((c) => {
+                  const idx = c.index + 1;
+                  const isSelected = selectedAnswer === c.index;
+                  const isOpen = expanded.has(c.index);
+                  const evidence = evidenceMap[c.index] || "";
+                  return (
+                    <li key={c.index} className={`choice-item ${isOpen ? "open" : ""}`}>
+                      <div className={`choice-row ${isSelected ? "selected" : ""}`}>
+                        <button
+                          type="button"
+                          className={`num-select ${isSelected ? "on" : ""}`}
+                          onClick={() => handleNumberSelect(c.index)}
+                          aria-pressed={isSelected}
+                          title={`${idx}번 선택`}
+                        >
+                          {idx}
+                        </button>
+                        <button
+                          type="button"
+                          className="choice-text-btn"
+                          onClick={() => toggleEvidence(c.index)}
+                          aria-expanded={isOpen}
+                          aria-controls={`evi-wrap-${c.index}`}
+                          title="근거 입력란 펼치기/접기"
+                        >
+                          {c.text}
+                        </button>
+                      </div>
 
-                    <div id={`evi-wrap-${c.index}`} className={`evidence-collapse ${isOpen ? "show" : ""}`}>
-                      <textarea
-                        className="evidence-input"
-                        placeholder="이 선지를 선택/배제한 근거를 입력하세요."
-                        value={evidence}
-                        onChange={(e) => setEvidenceMap((prev) => ({ ...prev, [c.index]: e.target.value }))}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
+                      <div id={`evi-wrap-${c.index}`} className={`evidence-collapse ${isOpen ? "show" : ""}`}>
+                        <textarea
+                          className="evidence-input"
+                          placeholder="이 선지를 선택/배제한 근거를 입력하세요."
+                          value={evidence}
+                          onChange={(e) => setEvidenceMap((prev) => ({ ...prev, [c.index]: e.target.value }))}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <div className="action-buttons-container">
+                <button className="btn btn-back" onClick={() => navigate(-1)}>뒤로가기</button>
+                <button
+                  className="btn btn-submit"
+                  onClick={handleSubmit}
+                  disabled={selectedAnswer === null || !allEvidenceFilled}
+                >
+                  제출
+                </button>
+              </div>
+            </div>
           </section>
-        </div>
-
-        <div className="action-buttons-container">
-          <button className="btn btn-back" onClick={() => navigate(-1)}>뒤로가기</button>
-          <button
-            className="btn btn-submit"
-            onClick={handleSubmit}
-            disabled={selectedAnswer === null || !allEvidenceFilled}
-          >
-            제출
-          </button>
         </div>
       </main>
     </div>

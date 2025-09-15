@@ -27,7 +27,10 @@ SIM_THRESHOLD    = 0.22
 
 def rewrite_choice_with_evidence(passage_sentences: List[Dict[str,str]], choice: Dict[str,Any], must: str) -> str:
     sents = {s["id"]: s["text"] for s in passage_sentences}
-    evidence = {sid: sents.get(sid,"") for sid in choice.get("evidence_sent_ids", [])}
+    evidence = {
+    int(sid): sents.get(int(sid), "")
+    for sid in (choice.get("evidence_sent_ids") or [])
+}
     prompt = f"""
 역할: 국어 비문학 선지 교정기. JSON만.
 요구: 아래 [근거 문장]에 직접 연결되도록 선지 텍스트를 최소 수정하라.
@@ -127,9 +130,17 @@ def generate(req: GenerateReq):
     )
     key_points = "; ".join([s["text"] for s in base["sentences"][:4]]) if base else ""
 
-    # 1) 생성(근거 내장)
+    # 1) 생성(근거 내장) — base_context를 실제로 전달
+    base_context = {
+        "group_id": base.get("group_id") if base else None,
+        "sentences": base.get("sentences") if base else []
+    }
     gen = llm_generate_with_evidence(
-        req.mode, topic=req.topic, difficulty=req.difficulty, target_chars=req.target_chars
+        req.mode,
+        topic=req.topic,
+        difficulty=req.difficulty,
+        target_chars=req.target_chars,
+        base_context=base_context
     )
     passage_sentences = gen.get("passage_sentences", [])
     # 방어: id 보정
@@ -155,8 +166,10 @@ def generate(req: GenerateReq):
         "difficulty": req.difficulty,
         "topic": req.topic,
         "target_chars": req.target_chars,
-        # ★ 여기 추가
-        "base_group_id": base.get("group_id") if base else None
+        # 베이스 정보(요청 사항)
+        "base_group_id": base.get("group_id") if base else None,
+        "used_base_group_id": gen.get("used_base_group_id"),
+        "source_map": gen.get("source_map", []),
     }
     if req.mode.upper() != "B":
         return result
@@ -275,10 +288,17 @@ def generate(req: GenerateReq):
         repair_round += 1
 
         if not ok and repair_round >= MAX_REPAIR_ROUNDS and regen < MAX_REGENERATE:
-            # 세트 재생성
+            # 세트 재생성 — ★ base_context를 다시 전달해야 일관성 유지
             regen += 1
             result["regen_count"] = regen
-            gen = llm_generate_with_evidence(req.mode, topic=req.topic, difficulty=req.difficulty, target_chars=req.target_chars)
+
+            gen = llm_generate_with_evidence(
+                req.mode,
+                topic=req.topic,
+                difficulty=req.difficulty,
+                target_chars=req.target_chars,
+                base_context=base_context
+            )
             passage_sentences = gen.get("passage_sentences", [])
             for i, s in enumerate(passage_sentences):
                 s["id"] = int(s.get("id") or (i+1))
@@ -286,6 +306,11 @@ def generate(req: GenerateReq):
             passage_text = " ".join(s["text"] for s in passage_sentences if s["text"])
             result["generated_passage"] = passage_text
             result["sentences"] = passage_sentences
+
+            # 재생성 결과의 베이스 추적값도 갱신
+            result["used_base_group_id"] = gen.get("used_base_group_id")
+            result["source_map"] = gen.get("source_map", [])
+
             choices = gen.get("choices", []) or []
             repair_round = 0
             ok, bad_idx, reason_or_summary, verified_map = accept_all(choices)
