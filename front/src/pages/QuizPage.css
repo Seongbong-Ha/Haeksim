@@ -69,8 +69,7 @@
 .passage-block p { margin: 0 0 14px; }
 
 @media (min-width: 1280px) {
-  .passage-block {
-    column-count: 2;           /* 큰 화면에서 두 단 */
+  .passage-block {          
     column-gap: 36px;
   }
   .passage-block p { break-inside: avoid; }
