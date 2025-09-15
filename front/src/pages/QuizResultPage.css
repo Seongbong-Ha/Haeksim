@@ -163,6 +163,17 @@
   margin: 0 0 10px 0;
 }
 
+/* 지문 카드 내용 */
+.passage-section .passage-block {
+  line-height: 1.68;
+  word-break: keep-all;
+  white-space: normal;
+}
+
+.passage-section .passage-block p {
+  margin: 0 0 14px;
+}
+
 /* Summary Scores Section */
 .summary-scores h2 {
   text-align: left;

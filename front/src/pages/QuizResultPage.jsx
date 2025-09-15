@@ -28,6 +28,9 @@ export default function QuizResultPage() {
   const [chatOpen, setChatOpen] = useState(false);     // ★ 챗봇 팝업
   const [learnOpen, setLearnOpen] = useState(false);   // ★ 추가 학습 팝업
 
+  const passageText = (item?.generated_passage || "").replace(/<br\s*\/?>/gi, "\n").trim();
+  const passageParas = passageText ? passageText.split(/\n{2,}/).map(s => s.trim()).filter(Boolean) : [];
+
   const allEvidenceFilled = useMemo(() => {
     if (!item?.choices?.length) return false;
     return item.choices.every((c) => (evidenceMap[c.index] || "").trim().length > 0);
@@ -147,6 +150,16 @@ export default function QuizResultPage() {
           )}
         </section>
 
+        {/* 지문 */}
+        <section className="analysis-section passage-section">
+          <h2>지문</h2>
+          <article className="passage-block">
+            {passageParas.length
+              ? passageParas.map((p, i) => <p key={i}>{p}</p>)
+              : <p>지문이 없습니다.</p>}
+          </article>
+        </section>
+
         {/* 선지별 분석 */}
         <section className="analysis-section option-analysis-section">
           <h2>선지별 분석</h2>
@@ -167,7 +180,7 @@ export default function QuizResultPage() {
                       <p><strong>내 근거</strong>: {userEv || "(입력 없음)"}</p>
                       {ai && (
                         <>
-                          <p><strong>AI 판정</strong>: {ai.verdict} (점수 {ai.score})</p>
+                          <p><strong>AI 판정</strong>: {ai.verdict} </p>
                           <p><strong>피드백</strong>: {ai.evidence_feedback}</p>
                           <p><strong>모델 근거/이유</strong>: {ai.model_rationale}</p>
                         </>

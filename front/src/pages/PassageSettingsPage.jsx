@@ -1,9 +1,10 @@
 // src/pages/PassageSettingsPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./PassageSettingsPage.css"; // CSS 연결
+import "./PassageSettingsPage.css";
+import LoadingPage from "./LoadingPage"; // ⬅️ 로딩 페이지
 
-// 백엔드 주소 (필요시 .env로 이관)
+// 백엔드 주소 (.env로 빼도 됨)
 const API_URL = "http://localhost:8000";
 
 // 로그인 토큰을 헤더에 싣기
@@ -19,12 +20,12 @@ export default function PassageSettingsPage() {
   const [difficulty, setDifficulty] = useState("어려움");
   const [topic, setTopic] = useState("사회");
   const [features, setFeatures] = useState("실제 문제 풀이"); // "실제 문제 풀이" | "지문의 핵심 파악하기"
-  const [passageLength, setPassageLength] = useState(1100);
+  const [passageLength, setPassageLength] = useState(1000);   // 기본 1000자
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // UI 옵션들
+  // 옵션
   const difficultyOptions = ["기초", "보통", "어려움"];
   const topicOptions = ["과학기술", "인문", "사회", "예술/문학", "시사"];
   const featureOptions = ["실제 문제 풀이", "지문의 핵심 파악하기"];
@@ -37,9 +38,9 @@ export default function PassageSettingsPage() {
     setError(null);
 
     try {
-      // 1) 지문 생성
+      // 1) 지문 생성 (길이 800~1200자로 클램프)
       const mode = toMode(features);
-      const target_chars = Math.max(200, Math.min(2000, Number(passageLength) || 1000));
+      const target_chars = Math.max(800, Math.min(1200, Number(passageLength) || 1000));
 
       const genRes = await fetch(`${API_URL}/api/v1/items/generate`, {
         method: "POST",
@@ -50,7 +51,7 @@ export default function PassageSettingsPage() {
         const t = await genRes.text();
         throw new Error(`생성 실패: ${genRes.status} ${t}`);
       }
-      const generated = await genRes.json(); // title, generated_passage, sentences, choices 등 반환
+      const generated = await genRes.json();
 
       // 2) 저장 (로그인 필요)
       const saveRes = await fetch(`${API_URL}/api/v1/items`, {
@@ -71,12 +72,10 @@ export default function PassageSettingsPage() {
       }
       const { item_id } = await saveRes.json();
 
-      // 3) 화면 전환
+      // 3) 페이지 이동 (성공 시 로딩 해제 없이 바로 이동 → 컴포넌트 언마운트)
       if (features === "실제 문제 풀이") {
-        // 기존 흐름 유지
         navigate("/quiz-page", { state: { itemId: item_id } });
       } else {
-        // 방법 A: 핵심파악일 때 생성 결과/옵션을 함께 전달
         navigate("/summary-practice", {
           state: {
             itemId: item_id,
@@ -87,7 +86,6 @@ export default function PassageSettingsPage() {
             difficulty,
             topic,
             target_chars,
-            // 즉시 렌더링용 studyPack 동봉
             studyPack: {
               title: generated.title || "학습 요약 지문",
               generated_passage: generated.generated_passage,
@@ -100,13 +98,18 @@ export default function PassageSettingsPage() {
           },
         });
       }
+      // ⚠️ 여기서는 setIsLoading(false)를 호출하지 않음(곧바로 navigate로 언마운트)
     } catch (e) {
       console.error(e);
       setError(e.message || "요청 처리 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // 실패 시에만 로딩 해제
     }
   };
+
+  // ⬇️ raw 파일처럼 로딩 중에는 전용 페이지를 보여줌
+  if (isLoading) {
+    return <LoadingPage />;
+  }
 
   return (
     <div className="passage-settings-container">
@@ -178,13 +181,13 @@ export default function PassageSettingsPage() {
             <input
               className="length-slider"
               type="range"
-              min={200}
-              max={2000}
+              min={800}
+              max={1200}
               step={50}
               value={passageLength}
-              onChange={(e) => setPassageLength(e.target.value)}
+              onChange={(e) => setPassageLength(Number(e.target.value))}
             />
-            <div className="current-length">{passageLength}자</div>
+            <div className="current-length">{passageLength}자 </div>
           </div>
         </section>
 

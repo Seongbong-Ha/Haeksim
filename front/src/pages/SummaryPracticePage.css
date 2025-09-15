@@ -137,33 +137,38 @@
 }
 
 /* Buttons */
+/* 하단 버튼 컨테이너: 가운데 정렬 + 고정 간격 */
+/* 1) 하단 버튼 컨테이너: 가운데 정렬 + 고정 간격 */
 .action-buttons-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;   /* space-between → center */
+  align-items: center;       /* 세로 가운데 정렬 */
+  gap: 24px;
   margin-top: 40px;
   margin-bottom: 50px;
 }
 
+/* 2) 공통 버튼: 내용 완전 중앙 + 높이/줄간격 통일 */
 .btn {
-  padding: 12px 25px;
-  border: none;
-  border-radius: 5px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  display: inline-flex;      /* 버튼 내부도 flex */
+  align-items: center;       /* 세로 가운데 */
+  justify-content: center;   /* 가로 가운데 */
+  height: 48px;              /* 높이 통일 */
+  min-width: 180px;          /* 너비 최소값(옵션) */
+  padding: 0 24px;           /* 세로는 0 → 높이만으로 통일 */
+  line-height: 1;            /* 폰트 메트릭에 따른 흔들림 방지 */
+  margin: 0;                 /* 혹시 모를 기본 마진 제거 */
+  box-sizing: border-box;
 }
 
-.btn-back {
-  background-color: #ced4da;
-  color: #333;
-}
-.btn-back:hover { background-color: #adb5bd; }
 
-.btn-submit {
-  background-color: #007bff;
-  color: #fff;
-}
-.btn-submit:hover { background-color: #0069d9; }
+/* 색상만 개별 */
+.btn-back   { background:#ced4da; color:#333; }
+.btn-back:hover { background:#adb5bd; }
+
+.btn-submit { background:#3b82f6; color:#fff; }
+.btn-submit:hover { background:#2563eb; }
+
 
 /* Chat popup container (유지) */
 .chat-popup {

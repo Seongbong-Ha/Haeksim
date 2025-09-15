@@ -11,18 +11,16 @@ function getAuthHeaders() {
 }
 
 /* ---------- 지문 단락화 유틸 ---------- */
-// BR/개행 정리 → 문장 분리
 function splitSentencesFromText(raw = "") {
   const t = String(raw)
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/\r\n?/g, "\n")
     .trim();
 
-  // 두 줄 개행은 이미 단락 → 우선 분리
   const roughParas = t.split(/\n{2,}/).map(x => x.trim()).filter(Boolean);
 
   const out = [];
-  const SENT_RX = /[^.!?。\n]+[.!?。]?(?=\s|$)/g; // 한국어도 마침표는 주로 . 또는 。 사용
+  const SENT_RX = /[^.!?。\n]+[.!?。]?(?=\s|$)/g;
   for (const rp of roughParas) {
     const pieces = rp.match(SENT_RX) || [rp];
     for (const s of pieces) {
@@ -33,7 +31,6 @@ function splitSentencesFromText(raw = "") {
   return out;
 }
 
-// API가 내려주는 sentences가 있으면 우선 사용
 function extractSentencesFromItem(item) {
   if (Array.isArray(item?.sentences) && item.sentences.length) {
     return item.sentences
@@ -43,7 +40,6 @@ function extractSentencesFromItem(item) {
   return splitSentencesFromText(item?.generated_passage || "");
 }
 
-// N문장씩 단락화
 function chunkSentences(sentences, maxPerPara = 3) {
   const paras = [];
   for (let i = 0; i < sentences.length; i += maxPerPara) {
@@ -70,7 +66,6 @@ export default function QuizPage() {
   const localKeyEvidence = currentItem ? `evidence_${String(currentItem.id)}` : null;
   const localKeyAnswer = currentItem ? `answer_${String(currentItem.id)}` : null;
 
-  // 아이템 로딩
   useEffect(() => {
     const load = async () => {
       try {
@@ -121,19 +116,28 @@ export default function QuizPage() {
     if (localKeyAnswer && selectedAnswer !== null) localStorage.setItem(localKeyAnswer, String(selectedAnswer));
   }, [localKeyAnswer, selectedAnswer]);
 
-  // 모든 근거 입력?
-  const allEvidenceFilled = useMemo(() => {
-    if (!currentItem?.choices?.length) return false;
-    return currentItem.choices.every((c) => (evidenceMap[c.index] || "").trim().length > 0);
+  // === 진행률 계산 ===
+  // 채워진 근거 개수
+  const filledEvidenceCount = useMemo(() => {
+    if (!currentItem?.choices?.length) return 0;
+    return currentItem.choices.reduce((acc, c) => {
+      const v = (evidenceMap[c.index] || "").trim();
+      return acc + (v.length > 0 ? 1 : 0);
+    }, 0);
   }, [currentItem, evidenceMap]);
 
-  const progressValue =
-    selectedAnswer !== null && allEvidenceFilled ? 100 : selectedAnswer !== null ? 70 : 40;
+  const numChoices = currentItem?.choices?.length || 0;
+  const totalSteps = numChoices + 1;                    // 근거 N개 + 답 선택 1개
+  const completedSteps = filledEvidenceCount + (selectedAnswer !== null ? 1 : 0);
+  const progressPercent = Math.max(
+    0,
+    Math.min(100, Math.round((completedSteps / Math.max(totalSteps, 1)) * 100))
+  );
 
-  // 번호 버튼으로만 정답 선택
+  const allEvidenceFilled = filledEvidenceCount === numChoices;
+
   const handleNumberSelect = (idx) => setSelectedAnswer(idx);
 
-  // 문장 클릭으로 근거 토글
   const toggleEvidence = (idx) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -154,7 +158,6 @@ export default function QuizPage() {
     }
 
     try {
-      // 서버 저장(제출)
       const res = await fetch(
         `${API_URL}/api/v1/items/${encodeURIComponent(String(currentItem.id))}/submit`,
         {
@@ -169,7 +172,6 @@ export default function QuizPage() {
         return;
       }
 
-      // 결과 페이지로 이동
       navigate("/quiz-results", {
         state: {
           itemId: String(currentItem.id),
@@ -186,7 +188,6 @@ export default function QuizPage() {
   if (loading) return <p>불러오는 중...</p>;
   if (!currentItem) return <p>문항이 없습니다.</p>;
 
-  // 지문 단락화(문장 배열 → 3문장씩 p)
   const sentences = extractSentencesFromItem(currentItem);
   const paragraphs = chunkSentences(sentences, 3);
 
@@ -204,10 +205,14 @@ export default function QuizPage() {
       <main className="quiz-main">
         <h1 className="main-title">{currentItem.title}</h1>
 
+        {/* 진행률: 제목 바로 아래 */}
         <section className="progress-section">
-          <div className="progress-text">진행률</div>
-          <progress className="progress-bar" max={100} value={progressValue} />
+          <div className="progress-text">진행률 {progressPercent}%</div>
+          <progress className="progress-bar" max={100} value={progressPercent} />
         </section>
+        <div className="progress-details">
+          근거 {filledEvidenceCount}/{numChoices} · 답 {selectedAnswer !== null ? "선택됨" : "미선택"}
+        </div>
 
         <div className="quiz-grid">
           {/* 왼쪽: 지문 */}
@@ -217,7 +222,7 @@ export default function QuizPage() {
             </article>
           </section>
 
-          {/* 오른쪽: 선지 (흰 박스 안에 전부 들어오도록 카드 래퍼 추가) */}
+          {/* 오른쪽: 선지 */}
           <section className="choices-section">
             <div className="choices-card">
               <h2 className="choices-title">{currentItem.question}</h2>
@@ -254,9 +259,11 @@ export default function QuizPage() {
                       <div id={`evi-wrap-${c.index}`} className={`evidence-collapse ${isOpen ? "show" : ""}`}>
                         <textarea
                           className="evidence-input"
-                          placeholder="이 선지를 선택/배제한 근거를 입력하세요."
+                          placeholder="이 선지를 선택/배제한 근거를 입력하세요. (입력 시 진행률이 올라갑니다)"
                           value={evidence}
-                          onChange={(e) => setEvidenceMap((prev) => ({ ...prev, [c.index]: e.target.value }))}
+                          onChange={(e) =>
+                            setEvidenceMap((prev) => ({ ...prev, [c.index]: e.target.value }))
+                          }
                         />
                       </div>
                     </li>

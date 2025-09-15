@@ -32,9 +32,10 @@
   font-size: 28px; font-weight: 800; color: #111827;
 }
 
+/* 진행률 */
 .progress-section {
   display: flex; align-items: center; gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 6px;                 /* 보조 문구와 간격 조정 */
 }
 .progress-text { font-weight: 700; }
 .progress-bar {
@@ -44,22 +45,28 @@
 .progress-bar::-webkit-progress-bar { background-color: #e5e7eb; border-radius: 9999px; }
 .progress-bar::-webkit-progress-value { background-color: #2563eb; border-radius: 9999px; }
 
-/* ===== 두 칼럼 그리드 (넘침 방지 세팅) ===== */
+/* 진행률 상세(근거/답 상태) */
+.progress-details {
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* ===== 두 칼럼 그리드 ===== */
 .quiz-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* 자식이 칼럼 폭을 넘지 않도록 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
-.passage-section,
-.choices-section { min-width: 0; } /* 그리드 자식 축소 허용 */
+.passage-section, .choices-section { min-width: 0; }
 
-/* ===== 지문 렌더링 ===== */
+/* 지문 */
 .passage-block {
-  text-align: left;            /* justify 제거 → 과한 띄어쓰기 방지 */
-  line-height: 1.68;           /* 1.66~1.72 사이 취향대로 */
+  text-align: left;
+  line-height: 1.68;
   letter-spacing: normal;
-  word-break: keep-all;        /* 한글 단어 단위 줄바꿈 */
+  word-break: keep-all;
   white-space: normal;
   background: #fff;
   border-radius: 16px;
@@ -69,13 +76,11 @@
 .passage-block p { margin: 0 0 14px; }
 
 @media (min-width: 1280px) {
-  .passage-block {          
-    column-gap: 36px;
-  }
+  .passage-block { column-gap: 36px; }
   .passage-block p { break-inside: avoid; }
 }
 
-/* ===== 선지 카드(흰 박스) ===== */
+/* 선지 카드 */
 .choices-card {
   width: 100%;
   max-width: 100%;
@@ -85,12 +90,8 @@
   padding: 22px 20px 16px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.04);
 }
-.choices-title {
-  margin: 4px 0 16px;
-  font-size: 22px; font-weight: 800; color: #111827;
-}
+.choices-title { margin: 4px 0 16px; font-size: 22px; font-weight: 800; color: #111827; }
 
-/* 리스트/아이템: 카드 안 폭 100% 기준 */
 .choices-list {
   list-style: none; margin: 0; padding: 0;
   display: flex; flex-direction: column; gap: 14px;
@@ -99,10 +100,9 @@
 .choice-item { max-width: 100%; box-sizing: border-box; }
 .choice-item.open .evidence-collapse { display: block; }
 
-/* 각 선지 행: 번호(auto) + 텍스트(줄어드는 칸) */
 .choice-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr); /* 텍스트 칼럼이 0까지 줄 수 있게 */
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: flex-start;
   gap: 12px;
   max-width: 100%;
@@ -113,7 +113,6 @@
 }
 .choice-row.selected { border-color: #2563eb; background: #eff6ff; }
 
-/* 번호 동그라미 버튼 */
 .num-select {
   flex: 0 0 auto;
   width: 40px; height: 40px;
@@ -124,23 +123,20 @@
   display: inline-flex; align-items: center; justify-content: center;
   color: #111827;
 }
-.num-select.on {
-  border-color: #2563eb; color: #2563eb; background: #fff;
-}
+.num-select.on { border-color: #2563eb; color: #2563eb; background: #fff; }
 
-/* 선지 텍스트 버튼: 줄바꿈 허용 + 부모 폭을 넘지 않도록 */
 .choice-text-btn {
   display: block;
   width: 100%; max-width: 100%;
   text-align: left;
-  white-space: normal;        /* nowrap 금지 */
-  overflow-wrap: anywhere;    /* 긴 단어/영문/URL 강제 줄바꿈 */
-  word-break: keep-all;       /* 한글 단어 단위 줄바꿈 */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
   background: transparent; border: 0; padding: 0;
   font-size: 16px; line-height: 1.6; color: #111827;
 }
 
-/* 근거 입력 (펼침 영역) */
+/* 근거 입력 */
 .evidence-collapse { display: none; }
 .evidence-input {
   width: 100%;
@@ -151,15 +147,12 @@
   font-size: 14px; line-height: 1.5; resize: vertical;
 }
 
-/* 제출/뒤로 버튼 */
+/* 제출/뒤로 */
 .action-buttons-container {
   display: flex; gap: 12px; justify-content: flex-end;
   margin-top: 18px;
 }
-.btn {
-  padding: 10px 16px; border-radius: 10px; font-weight: 700;
-  border: 0; cursor: pointer;
-}
+.btn { padding: 10px 16px; border-radius: 10px; font-weight: 700; border: 0; cursor: pointer; }
 .btn-back { background: #e5e7eb; color: #111827; }
 .btn-submit { background: #2563eb; color: #fff; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }

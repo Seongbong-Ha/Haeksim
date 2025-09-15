@@ -41,14 +41,10 @@
 }
 
 .mini-learn-textarea {
+  box-sizing: border-box;
   width: 100%;
-  height: 80px;  /* 2~3문장 정도 */
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 10px 12px;
-  resize: vertical;
-  outline: none;
-  font-size: 14px;
+  max-width: 100%;
+  display: block;        /* 줄 폭 전체 사용 (안전장치) */
 }
 
 .mini-learn-footer {

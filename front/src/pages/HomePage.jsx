@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
+import heroImage from '../assets/hero.png';
 
 
 // 각 섹션에 애니메이션 효과를 적용하는 컴포넌트
@@ -46,7 +47,11 @@ const Home = () => {
             AI 기반 학습 도우미 Haeksim과 함께 효과적인 학습을 시작해 보세요.
           </p>
           <div className="hero-image-container">
-            <img src="https://placehold.co/800x600/F5F5DC/333333?text=Haeksim+Hero+Image" alt="AI Tutoring Illustration" className="hero-image" />
+            <img 
+              src={heroImage} 
+              alt="Haeksim Hero" 
+              className="hero-image" 
+            />
           </div>
         </Section>
 
