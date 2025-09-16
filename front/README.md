@@ -1,70 +1,253 @@
-# Getting Started with Create React App
+# Frontend - Haeksim
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 📖 개요
 
-## Available Scripts
+React 기반의 수능 비문학 학습 플랫폼 프론트엔드입니다. 사용자가 AI 생성 지문으로 문제를 풀고, 요약을 작성하며, AI 튜터와 대화할 수 있는 인터페이스를 제공합니다.
 
-In the project directory, you can run:
+## 🛠 기술 스택
 
-### `npm start`
+- **React 18**: 컴포넌트 기반 UI 라이브러리
+- **React Router**: SPA 라우팅 관리
+- **Axios**: HTTP 클라이언트 (백엔드 API 통신)
+- **CSS3**: 스타일링 및 반응형 디자인
+- **Create React App**: 프로젝트 부트스트랩
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🚀 시작하기
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 사전 요구사항
+- Node.js 14.0 이상
+- npm 또는 yarn
 
-### `npm test`
+### 설치 및 실행
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+# 의존성 설치
+npm install
 
-### `npm run build`
+# 개발 서버 실행
+npm start
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+# 프로덕션 빌드
+npm run build
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# 테스트 실행
+npm test
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 환경 설정
 
-### `npm run eject`
+백엔드 API 서버가 `http://localhost:8000`에서 실행되고 있어야 합니다.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 📁 프로젝트 구조
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+src/
+├── components/          # 재사용 가능한 컴포넌트
+├── pages/              # 페이지별 컴포넌트
+│   ├── HomePage.jsx           # 온보딩 페이지
+│   ├── Page1.jsx              # 로그인 페이지
+│   ├── SignUpPage.jsx         # 회원가입 페이지
+│   ├── DashboardPage.jsx      # 메인 대시보드
+│   ├── PassageSettingsPage.jsx # 지문 설정 페이지
+│   ├── QuizPage.jsx           # 퀴즈 페이지
+│   ├── QuizResultPage.jsx     # 퀴즈 결과 페이지
+│   ├── SummaryPracticePage.jsx # 요약 연습 페이지
+│   └── LearningAnalysisPage.jsx # 학습 분석 페이지
+├── App.js              # 메인 앱 컴포넌트
+├── index.js            # 앱 진입점
+└── index.css           # 글로벌 스타일
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🎨 페이지별 기능
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 1. 홈페이지 (`/`)
+- **목적**: 서비스 소개 및 온보딩
+- **기능**: 플랫폼 기능 안내, 시작하기 버튼
 
-## Learn More
+### 2. 로그인 페이지 (`/page1`)
+- **목적**: 사용자 인증
+- **기능**: 
+  - 로그인 폼 (사용자명/비밀번호)
+  - JWT 토큰 저장 및 관리
+  - 자동 로그인 상태 유지
+  - 회원가입 페이지 연결
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 3. 회원가입 페이지 (`/sign-up`)
+- **목적**: 신규 사용자 등록
+- **기능**:
+  - 회원가입 폼 (사용자명, 이메일, 비밀번호)
+  - 비밀번호 확인 및 유효성 검사
+  - 자동 로그인 처리
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 4. 대시보드 (`/dashboard`)
+- **목적**: 학습 현황 확인 및 메뉴 네비게이션
+- **기능**:
+  - 최근 학습 기록 표시
+  - 실력 변화 그래프
+  - 문제풀이/요약연습 선택 메뉴
+  - 학습 분석 리포트 링크
 
-### Code Splitting
+### 5. 지문 설정 페이지 (`/passage-settings`)
+- **목적**: 학습 조건 설정
+- **기능**:
+  - 주제 선택 (과학, 기술, 인문, 사회 등)
+  - 난이도 선택 (쉬움, 보통, 어려움)
+  - 지문 길이 설정
+  - 문제 유형 선택
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 6. 퀴즈 페이지 (`/quiz-page`)
+- **목적**: AI 생성 지문으로 문제 풀이
+- **기능**:
+  - AI 생성 지문 표시
+  - 선지별 문제 제시
+  - 선지별 근거 작성란
+  - 실시간 제출 및 검증
+  - 진행 상황 표시
 
-### Analyzing the Bundle Size
+### 7. 퀴즈 결과 페이지 (`/quiz-results`)
+- **목적**: 풀이 결과 분석 및 피드백
+- **기능**:
+  - 정답/오답 표시
+  - 근거 품질 점수 (정확도, 논리성, 추론력)
+  - AI 상세 분석 및 해설
+  - 틀린 이유 설명
+  - AI 튜터와 대화 기능
+  - 동일 주제 추가 학습 제안
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### 8. 요약 연습 페이지 (`/summary-practice`)
+- **목적**: 지문 요약 작성 및 평가
+- **기능**:
+  - AI 생성 지문 제시
+  - 요약문 작성 에디터
+  - 실시간 글자 수 카운터
+  - 요약 품질 즉시 분석
+  - 점수별 세부 피드백
+  - AI 튜터 채팅 기능
 
-### Making a Progressive Web App
+### 9. 학습 분석 페이지 (`/learning-analysis`)
+- **목적**: 종합적인 학습 패턴 분석
+- **기능**:
+  - 시간별 성취도 그래프
+  - 주제별 강약점 분석
+  - 학습 권장 사항
+  - 목표 설정 및 진도 관리
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 🔐 인증 및 상태 관리
 
-### Advanced Configuration
+### JWT 토큰 관리
+```javascript
+// 로그인 시 토큰 저장
+localStorage.setItem('access_token', response.data.access_token);
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+// API 요청 시 자동 헤더 추가
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) config.headers['Authorization'] = `Bearer ${token}`;
+  return config;
+});
+```
 
-### Deployment
+### API 통신
+- **기본 URL**: `http://localhost:8000`
+- **인증**: Bearer Token 방식
+- **에러 처리**: 전역 에러 인터셉터로 일관된 처리
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🎨 스타일링 특징
 
-### `npm run build` fails to minify
+### 반응형 디자인
+- **모바일 우선**: Mobile-first 접근 방식
+- **브레이크포인트**: 768px, 1024px 기준 반응형
+- **플렉서블 레이아웃**: Flexbox와 Grid 활용
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### 디자인 시스템
+- **색상 팔레트**: 
+  - Primary: `#007bff` (파란색 계열)
+  - Success: `#28a745` (초록색 계열)
+  - Danger: `#dc3545` (빨간색 계열)
+  - Background: `#f7f9fc` (연한 회색)
+
+### UI 컴포넌트
+- **버튼**: 일관된 스타일과 호버 효과
+- **폼**: 접근성을 고려한 입력 필드
+- **카드**: 콘텐츠 그룹화를 위한 카드 레이아웃
+- **네비게이션**: 직관적인 페이지 이동
+
+## 🚀 성능 최적화
+
+### 코드 스플리팅
+- React.lazy()를 활용한 페이지별 지연 로딩 (예정)
+- 컴포넌트 단위 번들 분할
+
+### 상태 관리 최적화
+- 불필요한 리렌더링 방지
+- 로컬 스토리지 활용한 상태 영속화
+
+### 네트워크 최적화
+- API 요청 최소화
+- 이미지 최적화 및 지연 로딩
+
+## 🧪 테스트
+
+### 테스트 전략
+- **단위 테스트**: 개별 컴포넌트 테스트
+- **통합 테스트**: 페이지 흐름 테스트
+- **E2E 테스트**: 사용자 시나리오 테스트 (예정)
+
+```bash
+# 테스트 실행
+npm test
+
+# 커버리지 확인
+npm test -- --coverage
+```
+
+## 🔧 개발 도구
+
+### 코드 품질
+- **ESLint**: 코드 스타일 및 오류 검사
+- **Prettier**: 자동 코드 포맷팅 (예정)
+
+### 디버깅
+- React Developer Tools
+- Redux DevTools (필요시)
+
+## 📱 접근성 (Accessibility)
+
+- **시맨틱 HTML**: 의미있는 HTML 태그 사용
+- **키보드 네비게이션**: 모든 인터액션 키보드로 접근 가능
+- **색상 대비**: WCAG 가이드라인 준수
+- **스크린 리더**: ARIA 라벨 및 역할 정의
+
+## 🚀 배포
+
+### 빌드 최적화
+```bash
+npm run build
+```
+
+### 정적 파일 배포
+- **권장 플랫폼**: Netlify, Vercel, AWS S3
+- **환경 변수**: API 엔드포인트 설정
+
+## 🐛 트러블슈팅
+
+### 일반적인 문제
+
+1. **CORS 에러**
+   - 백엔드 서버의 CORS 설정 확인
+   - API 요청 URL 검증
+
+2. **토큰 만료**
+   - 자동 토큰 갱신 로직 구현 (예정)
+   - 로그아웃 후 재로그인 안내
+
+3. **페이지 새로고침 시 404**
+   - 서버 설정에서 SPA 라우팅 지원 필요
+
+## 📈 향후 개선 사항
+
+- **PWA 지원**: 오프라인 사용 및 앱 설치 기능
+- **다크 모드**: 사용자 설정 기반 테마 변경
+- **실시간 알림**: WebSocket 기반 실시간 피드백
+- **국제화**: 다국어 지원 (i18n)
+- **성능 모니터링**: 사용자 경험 지표 추적
