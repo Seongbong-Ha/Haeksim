@@ -234,6 +234,11 @@
   color: #fff;
 }
 
+.btn-secondary {
+  background-color: #6c757d;
+  color: #fff;
+}
+
 .btn-new-problem:hover, .btn-main-dashboard:hover {
   background-color: #5a6268;
 }
@@ -287,4 +292,11 @@
   z-index: 10000;
   display: flex;
   flex-direction: column;
+}
+
+.analysis-loading {
+  margin: -20px 0 20px;   /* 제목과 섹션 사이 간격 */
+  font-size: 15px;
+  font-weight: 600;
+  color: #007bff;
 }

@@ -207,7 +207,7 @@ export default function QuizPage() {
 
         {/* 진행률: 제목 바로 아래 */}
         <section className="progress-section">
-          <div className="progress-text">진행률 {progressPercent}%</div>
+          <div className="progress-text2">진행률 {progressPercent}%</div>
           <progress className="progress-bar" max={100} value={progressPercent} />
         </section>
         <div className="progress-details">

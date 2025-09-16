@@ -31,6 +31,8 @@ export default function QuizResultPage() {
   const passageText = (item?.generated_passage || "").replace(/<br\s*\/?>/gi, "\n").trim();
   const passageParas = passageText ? passageText.split(/\n{2,}/).map(s => s.trim()).filter(Boolean) : [];
 
+  const [analysisLoading, setAnalysisLoading] = useState(true);
+
   const allEvidenceFilled = useMemo(() => {
     if (!item?.choices?.length) return false;
     return item.choices.every((c) => (evidenceMap[c.index] || "").trim().length > 0);
@@ -65,6 +67,7 @@ export default function QuizResultPage() {
     const runAnalysis = async () => {
       if (!item || selectedAnswer === null) return;
       try {
+        setAnalysisLoading(true);
         const payload = {
           item_id: String(item.id),
           question: item.question || "다음 글을 읽고 물음에 답하시오.",
@@ -86,6 +89,8 @@ export default function QuizResultPage() {
         setAnalysis(data);
       } catch (e) {
         setError(e.message);
+      } finally {
+        setAnalysisLoading(false);
       }
     };
     runAnalysis();
@@ -118,6 +123,9 @@ export default function QuizResultPage() {
 
       <main className="result-main">
         <h1>문제 풀이 분석 결과</h1>
+        {analysisLoading && (
+          <div className="analysis-loading">결과 출력중...</div>
+        )}
 
         {/* 정답 분석 */}
         <section className="analysis-section correct-answer-box">
