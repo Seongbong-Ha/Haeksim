@@ -92,7 +92,7 @@ const SignUpPage = () => {
           />
           <input
             type="password"
-            placeholder="비밀번호"
+            placeholder="비밀번호 (대문자 1개 이상 필수 입력)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

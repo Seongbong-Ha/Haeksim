@@ -327,21 +327,25 @@ code {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  
-  /* 배경을 코닉 그라데이션으로 설정합니다. */
-  background: conic-gradient(#007bff 288deg, #e6f7f0 0deg); 
-  
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: conic-gradient(#78b7fc 288deg, #effbf6 0deg);
   margin-top: 20px;
-  border: none; /* 기존 border는 제거합니다 */
+
+  /* 추가 */
+  position: relative;           /* 자식 절대배치 기준 */
 }
 
+/* 변경: 중앙 고정 + 흰색 보장 */
 .progress-text {
   font-size: 24px;
   font-weight: bold;
-  color: #000000;
+   color: #000000; /* 강제 적용 */
+
+  /* 추가 */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .cheer-up {

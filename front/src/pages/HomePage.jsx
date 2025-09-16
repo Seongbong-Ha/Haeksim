@@ -32,6 +32,7 @@ const Home = () => {
         <h1 className="logo">Haeksim</h1>
         <nav>
           <a href="#" className="nav-link mr-4">로그인</a>
+          <span>   </span>
           <a href="#" className="nav-link">회원가입</a>
         </nav>
       </header>
@@ -54,14 +55,6 @@ const Home = () => {
             />
           </div>
         </Section>
-
-        <div className="separator-arrow">
-          <div className="arrow-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="icon">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>
-          </div>
-        </div>
 
         {/* 두 번째 섹션: 핵심 기능 소개 */}
         <Section className="section-features">
